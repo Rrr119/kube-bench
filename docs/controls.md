@@ -33,6 +33,8 @@ groups:
         set: false
       remediation: "Edit the /etc/kubernetes/config file on the master node and
         set the KUBE_ALLOW_PRIV parameter to '--allow-privileged=false'"
+      impact: "The API server static pod restarts; expect a short API outage."
+      rollback: "cp -a /var/backups/kube-apiserver.yaml.bak /etc/kubernetes/manifests/kube-apiserver.yaml"
       scored: true
 - id: 1.2
   text: Scheduler
@@ -129,11 +131,23 @@ remediation: |
   Edit the API server pod specification file kube-apiserver
   on the master node and set the below parameter.
   --anonymous-auth=false
+remediation_steps:
+  - "Back up the API server manifest"
+  - "Set --anonymous-auth=false"
+  - "Wait for the API server static pod to restart"
+impact: |
+  The API server restarts. Expect a short control-plane API interruption.
+rollback: |
+  cp -a /var/backups/kube-apiserver.yaml.bak \
+    /etc/kubernetes/manifests/kube-apiserver.yaml
 scored: false
 ```
 
 A `check` object has an `id`, a `text`, an `audit`, a `tests`, `remediation`
-and `scored` fields.
+and `scored` fields. It can also define optional `remediation_steps`, `impact`,
+and `rollback` fields for operator runbooks. See
+[remediation reports and custom baselines](remediation.md) for the schema,
+version overrides, and output examples.
 
 `kube-bench` supports running individual checks by specifying the check's `id`
 as a comma-delimited list on the command line with the `--check` flag.

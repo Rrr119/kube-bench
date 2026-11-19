@@ -1,0 +1,17 @@
+{
+  "root": "/home/dev/feedback/uid26920",
+  "B": "/home/dev/feedback/uid26920",
+  "sha": "040f62c777179d854ddd6c18fbf3bb6080ec256b",
+  "wslDistro": "Ubuntu-26.04",
+  "source": {
+    "owner": "aquasecurity",
+    "repo": "kube-bench",
+    "sha": "040f62c777179d854ddd6c18fbf3bb6080ec256b"
+  },
+  "fork": {
+    "owner": "Rrr119",
+    "repo": "kube-bench",
+    "cloneUrl": "https://github.com/Rrr119/kube-bench.git"
+  },
+  "at": "2026-11-19T07:18:25.169Z"
+}

@@ -630,6 +630,34 @@ func TestWriteResultNoTotalsToJsonFile(t *testing.T) {
 	assert.Equal(t, expect, result)
 }
 
+func TestWriteResultToHTMLFile(t *testing.T) {
+	defer func() {
+		controlsCollection = []*check.Controls{}
+		htmlFmt = false
+		outputFile = ""
+	}()
+
+	htmlFmt = true
+	outputFile = path.Join(os.TempDir(), fmt.Sprintf("kube-bench-%d.html", time.Now().UnixNano()))
+	defer os.Remove(outputFile)
+
+	var err error
+	controlsCollection, err = parseControlsJsonFile("./testdata/controlsCollection.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	writeOutput(controlsCollection)
+
+	out, err := os.ReadFile(outputFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Contains(t, string(out), "<!doctype html>")
+	assert.Contains(t, string(out), "kube-bench security baseline report")
+	assert.Contains(t, string(out), "Remediation")
+}
+
 func TestExitCodeSelection(t *testing.T) {
 	exitCode = 10
 	controlsCollectionAllPassed, errPassed := parseControlsJsonFile("./testdata/passedControlsCollection.json")

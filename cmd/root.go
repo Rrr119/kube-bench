@@ -42,8 +42,10 @@ var (
 	cfgDir               = "./cfg/"
 	jsonFmt              bool
 	junitFmt             bool
+	htmlFmt              bool
 	pgSQL                bool
 	aSFF                 bool
+	baselineFile         string
 	masterFile           = "master.yaml"
 	nodeFile             = "node.yaml"
 	etcdFile             = "etcd.yaml"
@@ -166,13 +168,15 @@ func init() {
 	RootCmd.PersistentFlags().BoolVar(&noTotals, "nototals", false, "Disable printing of totals for failed, passed, ... checks across all sections")
 	RootCmd.PersistentFlags().BoolVar(&jsonFmt, "json", false, "Prints the results as JSON")
 	RootCmd.PersistentFlags().BoolVar(&junitFmt, "junit", false, "Prints the results as JUnit")
+	RootCmd.PersistentFlags().BoolVar(&htmlFmt, "html", false, "Prints the results as a standalone HTML report")
 	RootCmd.PersistentFlags().BoolVar(&pgSQL, "pgsql", false, "Save the results to PostgreSQL")
 	RootCmd.PersistentFlags().BoolVar(&aSFF, "asff", false, "Send the results to AWS Security Hub")
 	RootCmd.PersistentFlags().BoolVar(&filterOpts.Scored, "scored", true, "Run the scored CIS checks")
 	RootCmd.PersistentFlags().BoolVar(&filterOpts.Unscored, "unscored", true, "Run the unscored CIS checks")
 	RootCmd.PersistentFlags().StringVar(&skipIds, "skip", "", "List of comma separated values of checks to be skipped")
 	RootCmd.PersistentFlags().BoolVar(&includeTestOutput, "include-test-output", false, "Prints the actual result when test fails")
-	RootCmd.PersistentFlags().StringVar(&outputFile, "outputfile", "", "Writes the results to output file when run with --json or --junit")
+	RootCmd.PersistentFlags().StringVar(&outputFile, "outputfile", "", "Writes the results to output file when run with --json, --junit, or --html")
+	RootCmd.PersistentFlags().StringVar(&baselineFile, "baseline", "", "Remediation baseline overlay YAML with custom impact, rollback, and version-specific guidance")
 
 	RootCmd.PersistentFlags().StringVarP(
 		&filterOpts.CheckList,

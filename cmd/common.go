@@ -111,6 +111,14 @@ func runChecks(nodetype check.NodeType, testYamlFile, detectedVersion string) {
 		exitWithError(fmt.Errorf("error setting up %s controls: %v", nodetype, err))
 	}
 
+	if baselineFile != "" {
+		baseline, err := check.LoadRemediationBaseline(baselineFile)
+		if err != nil {
+			exitWithError(err)
+		}
+		baseline.Apply(controls, detectedVersion)
+	}
+
 	runner := check.NewRunner()
 	filter, err := NewRunFilter(filterOpts)
 	if err != nil {
@@ -408,6 +416,10 @@ func writeOutput(controlsCollection []*check.Controls) {
 		writeJSONOutput(controlsCollection)
 		return
 	}
+	if htmlFmt {
+		writeHTMLOutput(controlsCollection)
+		return
+	}
 	if pgSQL {
 		writePgsqlOutput(controlsCollection)
 		return
@@ -450,6 +462,14 @@ func writeJunitOutput(controlsCollection []*check.Controls) {
 		}
 	}
 	printOutput(prefix+string(outputAllControls)+suffix, outputFile)
+}
+
+func writeHTMLOutput(controlsCollection []*check.Controls) {
+	out, err := check.HTML(controlsCollection)
+	if err != nil {
+		exitWithError(fmt.Errorf("failed to output in HTML format: %v", err))
+	}
+	printOutput(string(out), outputFile)
 }
 
 func writePgsqlOutput(controlsCollection []*check.Controls) {

@@ -18,12 +18,14 @@ Flag | Description
 --include-test-output | Prints the actual result when test fails.
 --json | Prints the results as JSON
 --junit | Prints the results as JUnit
+--html | Prints the results as a standalone HTML report
 --log_backtrace_at traceLocation | when logging hits line file:N, emit a stack trace (default :0)
 --logtostderr | log to standard error instead of files
 --noremediations | Disable printing of remediations section to stdout.
 --noresults | Disable printing of results section to stdout.
 --nototals | Disable calculating and printing of totals for failed, passed, ... checks across all sections 
---outputfile | Writes the results to output file when run with --json or --junit
+--baseline | Remediation baseline overlay YAML with custom impact, rollback, and version-specific guidance. See [remediation reports](remediation.md).
+--outputfile | Writes the results to output file when run with --json, --junit, or --html
 --pgsql | Save the results to PostgreSQL
 --scored | Run the scored CIS checks (default true)
 --skip string | List of comma separated values of checks to be skipped
@@ -38,6 +40,14 @@ Flag | Description
 #### Report kube-bench findings to AWS Security Hub
 
 You can configure kube-bench with the `--asff` option to send findings to AWS Security Hub for any benchmark tests that fail or that generate a warning. See [this page](asff.md) for more information on how to enable the kube-bench integration with AWS Security Hub.
+
+#### Generate remediation reports
+
+Use `--json` or `--html` with `--outputfile` to produce machine-readable or
+operator-friendly reports. Checks can include remediation steps, impact, and a
+rollback command. Use `--baseline` to apply organization-specific guidance and
+Kubernetes-version-specific overrides without forking the benchmark. See
+[remediation reports and custom baselines](remediation.md).
 
 #### Specifying the benchmark or Kubernetes version
 

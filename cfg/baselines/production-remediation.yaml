@@ -1,0 +1,176 @@
+---
+# Sample operator remediation baseline.
+#
+# Apply with:
+#   kube-bench run --targets master --version 1.32 \
+#     --baseline cfg/baselines/production-remediation.yaml \
+#     --html --outputfile kube-bench-report.html
+#
+# This overlay only supplies operational guidance. It does not change the
+# benchmark checks themselves. Keep backups in a root-only directory and set
+# the OLD_MODE / OLD_OWNER variables from the observed values before rollback.
+apiVersion: kube-bench/v1
+kind: RemediationBaseline
+metadata:
+  name: production-remediation
+  description: Production remediation, impact, and rollback guidance for CIS checks
+spec:
+  checks:
+    "1.1.1":
+      remediation: |
+        Set the API server static pod manifest to mode 600 or more restrictive.
+      remediation_steps:
+        - "Record the current mode: stat -c '%a %n' $apiserverconf"
+        - "Create a root-only backup: install -D -m 600 $apiserverconf /var/backups/kube-bench/kube-apiserver.yaml.bak"
+        - "Restrict the manifest mode: chmod 600 $apiserverconf"
+        - "Verify the change: stat -c '%a %n' $apiserverconf"
+      impact: |
+        No API outage is expected. Only root and the kubelet should read the
+        static pod manifest; confirm that local automation does not depend on
+        the previous group or world-readable mode.
+      rollback: |
+        OLD_MODE=644; chmod "$OLD_MODE" /etc/kubernetes/manifests/kube-apiserver.yaml
+
+    "1.1.2":
+      remediation: |
+        Set the API server static pod manifest ownership to root:root.
+      remediation_steps:
+        - "Record the current owner: stat -c '%U:%G %n' $apiserverconf"
+        - "Create a root-only backup: install -D -m 600 $apiserverconf /var/backups/kube-bench/kube-apiserver.yaml.bak"
+        - "Correct ownership: chown root:root $apiserverconf"
+        - "Verify the change: stat -c '%U:%G %n' $apiserverconf"
+      impact: |
+        No API outage is expected. The kubelet must still be able to read the
+        manifest; do not change ownership of the parent kubelet configuration
+        directory as part of this check.
+      rollback: |
+        OLD_OWNER=root:root; chown "$OLD_OWNER" /etc/kubernetes/manifests/kube-apiserver.yaml
+
+    "1.1.3":
+      remediation: |
+        Set the controller manager static pod manifest to mode 600 or more
+        restrictive.
+      remediation_steps:
+        - "Record the current mode: stat -c '%a %n' $controllermanagerconf"
+        - "Create a root-only backup: install -D -m 600 $controllermanagerconf /var/backups/kube-bench/kube-controller-manager.yaml.bak"
+        - "Restrict the manifest mode: chmod 600 $controllermanagerconf"
+        - "Verify the change: stat -c '%a %n' $controllermanagerconf"
+      impact: |
+        No controller manager restart is expected. Restricting read access may
+        affect diagnostic scripts running as a non-root user.
+      rollback: |
+        OLD_MODE=644; chmod "$OLD_MODE" /etc/kubernetes/manifests/kube-controller-manager.yaml
+
+    "1.1.4":
+      remediation: |
+        Set the controller manager static pod manifest ownership to root:root.
+      remediation_steps:
+        - "Record the current owner: stat -c '%U:%G %n' $controllermanagerconf"
+        - "Create a root-only backup: install -D -m 600 $controllermanagerconf /var/backups/kube-bench/kube-controller-manager.yaml.bak"
+        - "Correct ownership: chown root:root $controllermanagerconf"
+        - "Verify the change: stat -c '%U:%G %n' $controllermanagerconf"
+      impact: |
+        No controller manager restart is expected. Validate that host security
+        agents still have the least-privilege access they require.
+      rollback: |
+        OLD_OWNER=root:root; chown "$OLD_OWNER" /etc/kubernetes/manifests/kube-controller-manager.yaml
+
+    "1.1.5":
+      remediation: |
+        Set the scheduler static pod manifest to mode 600 or more restrictive.
+      remediation_steps:
+        - "Record the current mode: stat -c '%a %n' $schedulerconf"
+        - "Create a root-only backup: install -D -m 600 $schedulerconf /var/backups/kube-bench/kube-scheduler.yaml.bak"
+        - "Restrict the manifest mode: chmod 600 $schedulerconf"
+        - "Verify the change: stat -c '%a %n' $schedulerconf"
+      impact: |
+        No scheduler restart is expected. Pod scheduling remains available;
+        non-root diagnostic tooling may lose read access to the manifest.
+      rollback: |
+        OLD_MODE=644; chmod "$OLD_MODE" /etc/kubernetes/manifests/kube-scheduler.yaml
+
+    "1.1.6":
+      remediation: |
+        Set the scheduler static pod manifest ownership to root:root.
+      remediation_steps:
+        - "Record the current owner: stat -c '%U:%G %n' $schedulerconf"
+        - "Create a root-only backup: install -D -m 600 $schedulerconf /var/backups/kube-bench/kube-scheduler.yaml.bak"
+        - "Correct ownership: chown root:root $schedulerconf"
+        - "Verify the change: stat -c '%U:%G %n' $schedulerconf"
+      impact: |
+        No scheduler restart is expected. Confirm that backup and monitoring
+        agents run with the intended service account or host permissions.
+      rollback: |
+        OLD_OWNER=root:root; chown "$OLD_OWNER" /etc/kubernetes/manifests/kube-scheduler.yaml
+
+    "1.2.1":
+      remediation: |
+        Disable anonymous authentication on the API server.
+      remediation_steps:
+        - "Back up the API server manifest: install -D -m 600 $apiserverconf /var/backups/kube-bench/kube-apiserver.yaml.bak"
+        - "Add or update --anonymous-auth=false in $apiserverconf"
+        - "Wait for the kubelet to restart the API server static pod"
+        - "Verify that unauthenticated access is rejected"
+      impact: |
+        The API server static pod restarts, so expect a short control-plane API
+        interruption. Workloads continue running, but kubectl, controllers, and
+        admission webhooks may see transient connection errors. Check clients
+        that rely on anonymous access before enforcing this setting.
+      rollback: |
+        cp -a /var/backups/kube-bench/kube-apiserver.yaml.bak /etc/kubernetes/manifests/kube-apiserver.yaml
+
+    "1.2.2":
+      remediation: |
+        Remove the static token file from the API server and use a supported
+        authentication mechanism such as OIDC, certificates, or service accounts.
+      remediation_steps:
+        - "Back up the API server manifest: install -D -m 600 $apiserverconf /var/backups/kube-bench/kube-apiserver.yaml.bak"
+        - "Remove --token-auth-file from $apiserverconf"
+        - "Confirm that all automation uses a non-static credential"
+        - "Wait for the API server static pod to restart and verify authentication"
+      impact: |
+        The API server restarts. Any client still using a static token will be
+        denied immediately after the restart, so inventory those clients first.
+      rollback: |
+        cp -a /var/backups/kube-bench/kube-apiserver.yaml.bak /etc/kubernetes/manifests/kube-apiserver.yaml
+
+    "1.2.15":
+      remediation: |
+        Disable the API server profiling endpoint.
+      remediation_steps:
+        - "Back up the API server manifest: install -D -m 600 $apiserverconf /var/backups/kube-bench/kube-apiserver.yaml.bak"
+        - "Set --profiling=false in $apiserverconf"
+        - "Wait for the API server static pod to restart"
+        - "Verify that /debug/pprof is no longer exposed"
+      impact: |
+        The API server restarts, causing a brief API interruption. Profiling
+        capture used for incident analysis will no longer be available.
+      rollback: |
+        cp -a /var/backups/kube-bench/kube-apiserver.yaml.bak /etc/kubernetes/manifests/kube-apiserver.yaml
+
+    "1.3.2":
+      remediation: |
+        Disable the controller manager profiling endpoint.
+      remediation_steps:
+        - "Back up the controller manager manifest: install -D -m 600 $controllermanagerconf /var/backups/kube-bench/kube-controller-manager.yaml.bak"
+        - "Set --profiling=false in $controllermanagerconf"
+        - "Wait for the controller manager static pod to restart"
+        - "Verify that the profiling port is no longer exposed"
+      impact: |
+        The controller manager restarts briefly. Controllers reconcile again
+        after restart; profiling data used for troubleshooting is unavailable.
+      rollback: |
+        cp -a /var/backups/kube-bench/kube-controller-manager.yaml.bak /etc/kubernetes/manifests/kube-controller-manager.yaml
+
+  versions:
+    - name: kubernetes-1.30-plus
+      constraint: ">=1.30"
+      checks:
+        "1.2.1":
+          remediation: |
+            Disable anonymous authentication. On Kubernetes 1.30 and later,
+            keep --anonymous-auth=false in the API server manifest. If the
+            cluster uses Structured AuthenticationConfiguration, also verify
+            that the configuration does not enable anonymous access.
+          rollback: |
+            cp -a /var/backups/kube-bench/kube-apiserver.yaml.bak /etc/kubernetes/manifests/kube-apiserver.yaml

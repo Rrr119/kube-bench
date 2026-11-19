@@ -17,6 +17,7 @@ nav:
   - Flags: flags-and-commands.md
   - Configuration Options:
       - Understanding the yamls: controls.md
+      - Remediation reports: remediation.md
       - Architecture: architecture.md
   - Contributing: CONTRIBUTING.md
 

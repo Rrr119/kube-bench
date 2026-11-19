@@ -74,6 +74,9 @@ type Check struct {
 	Tests             *tests   `json:"-"`
 	Set               bool     `json:"-"`
 	Remediation       string   `json:"remediation"`
+	RemediationSteps  []string `yaml:"remediation_steps,omitempty" json:"remediation_steps,omitempty"`
+	Impact            string   `yaml:"impact,omitempty" json:"impact,omitempty"`
+	Rollback          string   `yaml:"rollback,omitempty" json:"rollback,omitempty"`
 	TestInfo          []string `json:"test_info"`
 	State             `json:"status"`
 	ActualValue       string `json:"actual_value"`
@@ -85,6 +88,30 @@ type Check struct {
 	AuditEnvOutput    string `json:"-"`
 	AuditConfigOutput string `json:"-"`
 	DisableEnvTesting bool   `json:"-"`
+}
+
+// UnmarshalYAML accepts the canonical impact/rollback fields as well as the
+// longer aliases impact_scope/rollback_command used by some custom baselines.
+func (c *Check) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	type plain Check
+	aux := struct {
+		plain           `yaml:",inline"`
+		ImpactScope     string `yaml:"impact_scope"`
+		RollbackCommand string `yaml:"rollback_command"`
+	}{}
+
+	if err := unmarshal(&aux); err != nil {
+		return err
+	}
+
+	*c = Check(aux.plain)
+	if c.Impact == "" {
+		c.Impact = aux.ImpactScope
+	}
+	if c.Rollback == "" {
+		c.Rollback = aux.RollbackCommand
+	}
+	return nil
 }
 
 // Runner wraps the basic Run method.

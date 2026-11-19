@@ -47,12 +47,14 @@ type OverallControls struct {
 
 // Controls holds all controls to check for master nodes.
 type Controls struct {
-	ID              string   `yaml:"id" json:"id"`
-	Version         string   `json:"version"`
-	DetectedVersion string   `json:"detected_version,omitempty"`
-	Text            string   `json:"text"`
-	Type            NodeType `json:"node_type"`
-	Groups          []*Group `json:"tests"`
+	ID                string   `yaml:"id" json:"id"`
+	Version           string   `json:"version"`
+	DetectedVersion   string   `json:"detected_version,omitempty"`
+	KubernetesVersion string   `yaml:"kubernetes_version,omitempty" json:"kubernetes_version,omitempty"`
+	Baseline          string   `yaml:"baseline,omitempty" json:"baseline,omitempty"`
+	Text              string   `json:"text"`
+	Type              NodeType `json:"node_type"`
+	Groups            []*Group `json:"tests"`
 	Summary
 }
 
